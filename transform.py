@@ -15,11 +15,17 @@ idea: treat each day as a "word"
     - this means we project from 24 hours to high dimensional space, back to 24 hours
     - alternatively, treat each hour as a word
     - or, project back to 1 hour but use 24 hour words (questionable)
-    - need positional encoding: use day of year/day of month/month of year
+    - need positional encoding: 
 issues:
     - loss should be KL divergence, not mse (because mse says its terrible if it lags slightly)
     - lots of lag; how to fix?
     - potential idea: just predict total daily use, instead of each hour use for the next day
+positional encoding:
+    - add hour of day, day of year directly to the embedding in the correct location (but decompose/normalize)
+inputs:
+    word = [actual radiation at hour, predicted radiation at hour, weather at hour]
+
+    
     """
 
 class SeriesTransformer(pl.LightningModule):
@@ -285,9 +291,9 @@ def plot_batch_out(val_loader, model):
         ax = axes[i // 4][i % 4]
         ax.plot(range(len(hours)), hours )
         ax.plot(pred_range, next_hours)
-        ax.plot(pred_range, pred[0][0].cpu())
+        ax.plot(pred_range, pred[0][i].cpu())
     print(nn.functional.mse_loss(trg.cuda(), pred))
-
+    plt.show()
 
 def plot_sgd_out(val_loader, model):
     fig, axes = plt.subplots(nrows=4, ncols=4)
@@ -304,7 +310,7 @@ def plot_sgd_out(val_loader, model):
             ax = axes[i // 4][i % 4]
             ax.plot(range(len(hours)), hours )
             ax.plot(pred_range, next_hours)
-            ax.plot(pred_range, pred[0][0].cpu())
+            ax.plot(pred_range, pred[0][i].cpu())
     print(nn.functional.mse_loss(trg.cuda(), pred))
     plt.show()
 
@@ -314,8 +320,8 @@ def train():
     EMBED_DIM = 512
     MEM_HORIZON = 7
     FWD_HORIZON = 1
-    EPOCHS = 1
-    BATCH_SIZE = 1
+    EPOCHS = 30
+    BATCH_SIZE = 16
     LR = 1e-4
     split = .8
     data = load_csv('energy.csv')
